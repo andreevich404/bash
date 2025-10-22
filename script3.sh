@@ -8,7 +8,7 @@ read -p "Enter filename to search: " filename
 
 # Check if directory exists
 if [ ! -d "$search_dir" ]; then
-    echo "❌ Error: Directory $search_dir does not exist!"
+    echo "Error: Directory $search_dir does not exist!"
     exit 1
 fi
 
@@ -25,7 +25,7 @@ echo ""
 result=$(find "$search_dir" -name "$filename" -type f 2>/dev/null)
 
 if [ -n "$result" ]; then
-    echo "✅ File found:"
+    echo "File found:"
     echo "$result"
     
     # Additional information about found files
