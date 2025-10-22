@@ -1,119 +1,119 @@
 #!/bin/bash
-# Скрипт для изменения домашней директории и пароля пользователя
+# Script to change user home directory and password
 
-echo "=== Изменение параметров пользователя ==="
+echo "=== Change User Parameters ==="
 
-read -p "Введите имя пользователя: " username
+read -p "Enter username: " username
 
-# Проверка существования пользователя
+# Check if user exists
 if ! id "$username" &>/dev/null; then
-    echo "Ошибка: Пользователь $username не существует!"
+    echo "Error: User $username does not exist!"
     exit 1
 fi
 
-echo "Текущая информация о пользователе:"
-echo "=== Базовая информация ==="
+echo "Current user information:"
+echo "=== Basic Information ==="
 id "$username"
 
-echo -e "\n=== Подробная информация из /etc/passwd ==="
+echo -e "\n=== Detailed information from /etc/passwd ==="
 if grep "^$username:" /etc/passwd &>/dev/null; then
     user_info=$(grep "^$username:" /etc/passwd)
     IFS=':' read -r user_name password uid gid gecos home shell <<< "$user_info"
-    echo "Имя пользователя: $user_name"
+    echo "Username: $user_name"
     echo "UID: $uid"
     echo "GID: $gid"
-    echo "Комментарий: $gecos"
-    echo "Домашняя директория: $home"
-    echo "Оболочка: $shell"
+    echo "Comment: $gecos"
+    echo "Home directory: $home"
+    echo "Shell: $shell"
 else
-    echo "Информация не найдена в /etc/passwd"
+    echo "Information not found in /etc/passwd"
 fi
 
-echo -e "\n=== Группы пользователя ==="
+echo -e "\n=== User groups ==="
 groups "$username"
 
-echo -e "\n=== Домашняя директория ==="
+echo -e "\n=== Home directory ==="
 echo "$(eval echo ~$username)"
 
-# Проверка существования домашней директории
+# Check if home directory exists
 if [ -d "$(eval echo ~$username)" ]; then
-    echo "Статус: Существует"
+    echo "Status: Exists"
 else
-    echo "Статус: Не существует"
+    echo "Status: Does not exist"
 fi
 
-# Смена домашней директории
-echo -e "\n=== Изменение домашней директории ==="
-read -p "Введите новую домашнюю директорию (или Enter чтобы пропустить): " new_home
+# Change home directory
+echo -e "\n=== Change Home Directory ==="
+read -p "Enter new home directory (or press Enter to skip): " new_home
 if [ -n "$new_home" ]; then
-    echo "Изменение домашней директории на $new_home..."
+    echo "Changing home directory to $new_home..."
     
-    # Проверяем, существует ли новая директория
+    # Check if new directory exists
     if [ ! -d "$new_home" ]; then
-        read -p "Директория не существует. Создать? (y/n): " create_dir
+        read -p "Directory does not exist. Create it? (y/n): " create_dir
         if [ "$create_dir" = "y" ] || [ "$create_dir" = "Y" ]; then
             sudo mkdir -p "$new_home" 2>/dev/null
             if [ $? -eq 0 ]; then
-                echo "Директория создана."
+                echo "Directory created."
             else
-                echo "Ошибка: Не удалось создать директорию!"
+                echo "Error: Failed to create directory!"
             fi
         fi
     fi
     
     if sudo usermod -d "$new_home" "$username" 2>/dev/null; then
-        echo "Домашняя директория успешно изменена!"
+        echo "Home directory successfully changed!"
         
-        # Копируем файлы из старой домашней директории в новую
+        # Copy files from old home to new home
         old_home=$(eval echo ~$username)
         if [ -d "$old_home" ] && [ "$old_home" != "$new_home" ]; then
-            read -p "Скопировать файлы из старой домашней директории? (y/n): " copy_files
+            read -p "Copy files from old home directory? (y/n): " copy_files
             if [ "$copy_files" = "y" ] || [ "$copy_files" = "Y" ]; then
                 sudo cp -r "$old_home"/. "$new_home"/ 2>/dev/null && \
                 sudo chown -R "$username:$username" "$new_home" 2>/dev/null
                 if [ $? -eq 0 ]; then
-                    echo "Файлы успешно скопированы."
+                    echo "Files successfully copied."
                 else
-                    echo "Ошибка при копировании файлов."
+                    echo "Error copying files."
                 fi
             fi
         fi
     else
-        echo "Ошибка: Не удалось изменить домашнюю директорию!"
+        echo "Error: Failed to change home directory!"
     fi
 fi
 
-# Смена пароля
-echo -e "\n=== Изменение пароля ==="
-read -p "Хотите изменить пароль пользователя? (y/n): " change_pass
+# Change password
+echo -e "\n=== Change Password ==="
+read -p "Do you want to change user password? (y/n): " change_pass
 if [ "$change_pass" = "y" ] || [ "$change_pass" = "Y" ]; then
-    echo "Изменение пароля для пользователя $username..."
+    echo "Changing password for user $username..."
     if sudo passwd "$username"; then
-        echo "Пароль успешно изменен!"
+        echo "Password successfully changed!"
     else
-        echo "Ошибка: Не удалось изменить пароль!"
+        echo "Error: Failed to change password!"
     fi
 fi
 
-# Вывод обновленной информации
-echo -e "\n=== Обновленная информация о пользователе ==="
+# Display updated information
+echo -e "\n=== Updated User Information ==="
 id "$username"
-echo -e "\nДомашняя директория: $(eval echo ~$username)"
+echo -e "\nHome directory: $(eval echo ~$username)"
 
-# Проверка существования новой домашней директории
+# Check if new home directory exists
 if [ -n "$new_home" ]; then
     if [ -d "$new_home" ]; then
-        echo "Статус домашней директории: Существует"
-        echo "Права доступа: $(ls -ld "$new_home" | awk '{print $1}')"
-        echo "Владелец: $(ls -ld "$new_home" | awk '{print $3}')"
+        echo "Home directory status: Exists"
+        echo "Permissions: $(ls -ld "$new_home" | awk '{print $1}')"
+        echo "Owner: $(ls -ld "$new_home" | awk '{print $3}')"
     else
-        echo "Статус домашней директории: Не существует"
+        echo "Home directory status: Does not exist"
     fi
 fi
 
-echo -e "\n=== Дополнительная информация ==="
-echo "Время последнего входа:"
-last "$username" | head -1 2>/dev/null || echo "Информация недоступна"
+echo -e "\n=== Additional Information ==="
+echo "Last login:"
+last "$username" | head -1 2>/dev/null || echo "Information unavailable"
 
-echo -e "\nТекущие сессии:"
-who | grep "$username" 2>/dev/null || echo "Нет активных сессий"
+echo -e "\nCurrent sessions:"
+who | grep "$username" 2>/dev/null || echo "No active sessions"
